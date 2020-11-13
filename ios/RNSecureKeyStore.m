@@ -130,10 +130,11 @@ static NSString *serviceName = @"RNSecureKeyStoreKeyChain";
 
 - (void)handleAppUninstallation
 {
-    if ([self resetOnAppUninstall] && ![[NSUserDefaults standardUserDefaults] boolForKey:@"RnSksIsAppInstalled"]) {
+    NSUserDefaults *groupDefaults = [[NSUserDefaults alloc] initWithSuiteName:@"group.io.bluewallet.bluewallet"];
+    if ([self resetOnAppUninstall] && ![groupDefaults boolForKey:@"RnSksIsAppInstalled"]) {
         [self clearSecureKeyStore];
-        [[NSUserDefaults standardUserDefaults] setBool:YES forKey:@"RnSksIsAppInstalled"];
-        [[NSUserDefaults standardUserDefaults] synchronize];
+        [groupDefaults setBool:YES forKey:@"RnSksIsAppInstalled"];
+        [groupDefaults synchronize];
     }
 }
 
