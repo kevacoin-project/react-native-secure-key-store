@@ -40,31 +40,31 @@ static NSString *serviceName = @"RNSecureKeyStoreKeyChain";
 
 - (NSMutableDictionary *)newSearchDictionary:(NSString *)identifier {
     NSMutableDictionary *searchDictionary = [[NSMutableDictionary alloc] init];
-    
+
     [searchDictionary setObject:(id)kSecClassGenericPassword forKey:(id)kSecClass];
-    
+
     NSData *encodedIdentifier = [identifier dataUsingEncoding:NSUTF8StringEncoding];
     [searchDictionary setObject:encodedIdentifier forKey:(id)kSecAttrGeneric];
     [searchDictionary setObject:encodedIdentifier forKey:(id)kSecAttrAccount];
     [searchDictionary setObject:serviceName forKey:(id)kSecAttrService];
-    
+
     return searchDictionary;
 }
 
 - (NSString *)searchKeychainCopyMatching:(NSString *)identifier {
     NSMutableDictionary *searchDictionary = [self newSearchDictionary:identifier];
-    
+
     // Add search attributes
     [searchDictionary setObject:(id)kSecMatchLimitOne forKey:(id)kSecMatchLimit];
-    
+
     // Add search return types
     [searchDictionary setObject:(id)kCFBooleanTrue forKey:(id)kSecReturnData];
-    
+
     NSDictionary *found = nil;
     CFTypeRef result = NULL;
     OSStatus status = SecItemCopyMatching((CFDictionaryRef)searchDictionary,
                                           (CFTypeRef *)&result);
-    
+
     NSString *value = nil;
     found = (__bridge NSDictionary*)(result);
     if (found) {
@@ -76,13 +76,13 @@ static NSString *serviceName = @"RNSecureKeyStoreKeyChain";
 - (BOOL)createKeychainValue:(NSString *)value forIdentifier:(NSString *)identifier options: (NSDictionary * __nullable)options {
     CFStringRef accessible = accessibleVal(options);
     NSMutableDictionary *dictionary = [self newSearchDictionary:identifier];
-    
+
     NSData *valueData = [value dataUsingEncoding:NSUTF8StringEncoding];
     [dictionary setObject:valueData forKey:(id)kSecValueData];
     dictionary[(__bridge NSString *)kSecAttrAccessible] = (__bridge id)accessible;
-    
+
     OSStatus status = SecItemAdd((CFDictionaryRef)dictionary, NULL);
-    
+
     if (status == errSecSuccess) {
         return YES;
     }
@@ -90,7 +90,7 @@ static NSString *serviceName = @"RNSecureKeyStoreKeyChain";
 }
 
 - (BOOL)updateKeychainValue:(NSString *)password forIdentifier:(NSString *)identifier options:(NSDictionary * __nullable)options {
-    
+
     CFStringRef accessible = accessibleVal(options);
     NSMutableDictionary *searchDictionary = [self newSearchDictionary:identifier];
     NSMutableDictionary *updateDictionary = [[NSMutableDictionary alloc] init];
@@ -99,7 +99,7 @@ static NSString *serviceName = @"RNSecureKeyStoreKeyChain";
     updateDictionary[(__bridge NSString *)kSecAttrAccessible] = (__bridge id)accessible;
     OSStatus status = SecItemUpdate((CFDictionaryRef)searchDictionary,
                                     (CFDictionaryRef)updateDictionary);
-    
+
     if (status == errSecSuccess) {
         return YES;
     }
@@ -138,7 +138,7 @@ static NSString *serviceName = @"RNSecureKeyStoreKeyChain";
     }
 }
 
-NSError * secureKeyStoreError(NSString *errMsg)
+NSError * secureKeyStoreErrorMessage(NSString *errMsg)
 {
     NSError *error = [NSError errorWithDomain:serviceName code:200 userInfo:@{@"reason": errMsg}];
     return error;
@@ -166,13 +166,13 @@ RCT_EXPORT_METHOD(set: (NSString *)key value:(NSString *)value
                 resolve(@"key updated successfully");
             } else {
                 NSString* errorMessage = @"{\"message\":\"error saving key\"}";
-                reject(@"9", errorMessage, secureKeyStoreError(errorMessage));
+                reject(@"9", errorMessage, secureKeyStoreErrorMessage(errorMessage));
             }
         }
     }
     @catch (NSException *exception) {
         NSString* errorMessage = [NSString stringWithFormat:@"{\"message\":\"error saving key, please try to un-install and re-install app again\",\"actual-error\":%@}", exception];
-        reject(@"9", errorMessage, secureKeyStoreError(errorMessage));
+        reject(@"9", errorMessage, secureKeyStoreErrorMessage(errorMessage));
     }
 }
 
@@ -185,14 +185,14 @@ RCT_EXPORT_METHOD(get:(NSString *)key
         NSString *value = [self searchKeychainCopyMatching:key];
         if (value == nil) {
             NSString* errorMessage = @"{\"message\":\"key does not present\"}";
-            reject(@"404", errorMessage, secureKeyStoreError(errorMessage));
+            reject(@"404", errorMessage, secureKeyStoreErrorMessage(errorMessage));
         } else {
             resolve(value);
         }
     }
     @catch (NSException *exception) {
         NSString* errorMessage = [NSString stringWithFormat:@"{\"message\":\"key does not present\",\"actual-error\":%@}", exception];
-        reject(@"1", errorMessage, secureKeyStoreError(errorMessage));
+        reject(@"1", errorMessage, secureKeyStoreErrorMessage(errorMessage));
     }
 }
 
@@ -206,12 +206,12 @@ RCT_EXPORT_METHOD(remove:(NSString *)key
             resolve(@"key removed successfully");
         } else {
             NSString* errorMessage = @"{\"message\":\"could not delete key\"}";
-            reject(@"6", errorMessage, secureKeyStoreError(errorMessage));
+            reject(@"6", errorMessage, secureKeyStoreErrorMessage(errorMessage));
         }
     }
     @catch(NSException *exception) {
         NSString* errorMessage = [NSString stringWithFormat:@"{\"message\":\"could not delete key\",\"actual-error\":%@}", exception];
-        reject(@"6", errorMessage, secureKeyStoreError(errorMessage));
+        reject(@"6", errorMessage, secureKeyStoreErrorMessage(errorMessage));
     }
 }
 
